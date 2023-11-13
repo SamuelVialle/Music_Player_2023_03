@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaPlayer;
@@ -25,9 +24,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,13 +40,12 @@ public class MainActivity extends AppCompatActivity {
     private AdapterSong adapterSong;
     private LinearLayoutManager linearLayoutManager;
     private double currentPosition, totalDuration;
+    private int songIndex = 0;
 
     /**
      * Init method to initialize all the widgets
      **/
     private void init() {
-
-
         rvSongs = findViewById(R.id.rv_songs);
         btnPrevious = findViewById(R.id.iv_btn_previous);
         btnPlay = findViewById(R.id.iv_btn_play);
@@ -77,8 +73,9 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions
                     (MainActivity.this, new String[]{Manifest.permission.READ_MEDIA_AUDIO}, 100);
         } else {
-            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
             // Here we gonna put the method to play songs
+            setSong();
         }
     }
 
@@ -169,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
 
             btnPlay.setImageResource(R.drawable.ic_pause_48_w);
             tvSongTitle.setText(songArrayList.get(position).getSongTitle());
+            songIndex = position;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -221,13 +219,123 @@ public class MainActivity extends AppCompatActivity {
         return songDuration;
     }
 
+    private void pauseSong() {
+        btnPlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    btnPlay.setImageResource(R.drawable.ic_play_48_w);
+                } else {
+                    mediaPlayer.start();
+                    btnPlay.setImageResource(R.drawable.ic_pause_48_w);
+                }
+            }
+        });
+    }
+
+    private void previousSong() {
+        btnPrevious.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (songIndex > 0) {
+                    songIndex--;
+                } else {
+                    songIndex = songArrayList.size() - 1;
+                }
+                playSong(songIndex);
+            }
+        });
+    }
+
+    private void nextSong() {
+        btnNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (songIndex < (songArrayList.size() - 1)) {
+                    songIndex++;
+                } else {
+                    songIndex = 0;
+                }
+                playSong(songIndex);
+
+                // Else
+//                if (songIndex == songArrayList.size()){
+//                    songIndex = 0;
+//                } else {
+//                    songIndex++;
+//                }
+//                playSong(songIndex);
+            }
+        });
+    }
+
+    private void setSong() {
+        // Get all the songArrayList content from the terminal
+        getAudioFiles();
+        manageRv();
+
+        sbPosition.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                currentPosition = seekBar.getProgress();
+                mediaPlayer.seekTo((int) currentPosition);
+                mediaPlayer.start();
+            }
+        });
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                songIndex++;
+                if (songIndex < (songArrayList.size())) {
+                    playSong(songIndex);
+                } else {
+                    songIndex = 0;
+                    playSong(songIndex);
+                }
+            }
+        });
+
+
+        if (!songArrayList.isEmpty()) {
+            playSong(songIndex);
+            pauseSong();
+            previousSong();
+            nextSong();
+        }
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         init(); // initialiser les compoments
         checkPermission();
-        getAudioFiles();
-        manageRv();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null){
+            mediaPlayer.stop();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mediaPlayer != null){
+            mediaPlayer.release();
+        }
     }
 }
