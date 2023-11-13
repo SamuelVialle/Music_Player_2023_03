@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.ContentView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -79,12 +78,32 @@ public class AdapterSong extends RecyclerView.Adapter<AdapterSong.MyViewHolder> 
     public class MyViewHolder extends RecyclerView.ViewHolder {
         TextView title, artist, album;
         ImageView cover;
+
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.tv_title);
             artist = itemView.findViewById(R.id.tv_artist);
             album = itemView.findViewById(R.id.tv_album);
             cover = itemView.findViewById(R.id.iv_cover);
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    myOnItemClickListener.onItemClick(getAdapterPosition(), v);
+                }
+            });
         }
     }
+
+    public interface MyOnItemClickListener {
+        void onItemClick(int position, View view);
+    }
+
+    private MyOnItemClickListener myOnItemClickListener;
+
+    public void setMyOnItemClickListener(MyOnItemClickListener pMyOnItemClickListener) {
+        this.myOnItemClickListener = pMyOnItemClickListener;
+    }
+
+
 }
